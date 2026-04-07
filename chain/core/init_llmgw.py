@@ -48,9 +48,9 @@ def load_env() -> dict:
     api_key = (config.get("llmgw_api_key") or os.environ.get("LLMGW_API_KEY") or "").strip()
     workspace = (config.get("llmgw_workspace") or os.environ.get("LLMGW_WORKSPACE") or "").strip()
     base = (config.get("llmgw_api_base") or os.environ.get("LLMGW_API_BASE") or "").strip().rstrip("/")
-    if not api_key or not workspace or not base:
+    if not api_key or not base:
         raise ValueError(
-            "LLMGW: set llmgw_api_key, llmgw_workspace, llmgw_api_base in "
+            "LLMGW: set llmgw_api_key, llmgw_api_base in "
             "llm/config/llmgw_config.json (or LLMGW_* env vars)."
         )
     embedding_model = (
@@ -65,9 +65,10 @@ def load_env() -> dict:
         or "gpt-4o-mini"
     )
     headers = {
-        "api-key": api_key,
-        "workspacename": workspace,
+        "api-key": api_key
     }
+    if workspace:
+        headers['workspacename'] = workspace
     temperature = float(config.get("temperature", 0.3))
     max_tokens = int(config.get("max_tokens", 8000))
     
@@ -96,7 +97,7 @@ class GatewayOpenAIEmbeddings(Embeddings):
     ) -> None:
         self._model = model
         self._client = OpenAI(
-            api_key="NONE",
+            api_key=gw["headers"]["api-key"],
             base_url=base_url.rstrip("/"),
             http_client=http_client,
         )
@@ -127,7 +128,7 @@ class OpenAIClient:
 
     def __init__(self) -> None:
         self.openai_client = OpenAI(
-            api_key="NONE",
+            api_key=gw["headers"]["api-key"],
             base_url=gw["base"].rstrip("/"),
             http_client=httpx.Client(verify=False, headers=gw["headers"]),
         )
