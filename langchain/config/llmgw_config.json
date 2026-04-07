@@ -1,0 +1,31 @@
+{
+    "llm_gateway": {
+        "provider": "openai",
+        "provider_options": [
+            "openai",
+            "claude",
+            "codellama",
+            "palm",
+            "llmgw",
+            "ollama"
+        ],
+        "api_key": "",
+        "endpoint": "http://127.0.0.1:11434/v1",
+        "model": "meta-llama-3.3-70b-instruct",
+        "temperature": 0.3,
+        "max_tokens": 8000,
+        "timeout": 300,
+        "use_llmgw": true,
+        "llmgw_api_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyTmFtZSI6InBvY0JPQU1VSSIsIk9iamVjdElEIjoiRTVGQTI4N0UtQzIwNy00MkZDLUIwQzEtODNEQTcxMTIzNjUwIiwid29ya1NwYWNlTmFtZSI6IlZSMTI5NkV4cGxvcmVMTE1HV0FJQ29kZVJldmlld0dlcnJpdCIsIm5iZiI6MTc1MTg3NjM0NCwiZXhwIjoxNzgzNDEyMzQ0LCJpYXQiOjE3NTE4NzYzNDR9.eEn4HuyfdV25GxcZmVgSgQGQ_v63qBfi7eaxkKsHT-0",
+        "llmgw_workspace": "VR1296ExploreLLMGWAICodeReviewGerrit",
+        "llmgw_api_base": "https://llmgateway-qa-api.nokia.com/v1.2/",
+        "llmgw_model": "GPT5",
+        "llmgw_reasoning_effort": "medium",
+        "llmgw_library": "openai",
+        "llmgw_library_options": [
+            "openai",
+            "langchain",
+            "llamaindex"
+        ]
+    }
+}
