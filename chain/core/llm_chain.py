@@ -6,7 +6,7 @@ from langchain_core.agents import AgentFinish
 from langchain_classic.agents.output_parsers import ToolsAgentOutputParser
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from core.init_llmgw import get_openai_client
+from chain.core.init_llmgw import get_openai_client
 from pydantic import BaseModel
 
 
@@ -29,7 +29,7 @@ class ToolChain:
         return JsonOutputToolsParser()
 
     def _get_reducer(self, split: bool = False) -> Any:
-        return ToolChainUtils.pop
+        return ToolChainUtils.unwrap
 
     def _call_model(self, input: str, split: bool = False) -> Any:
         llm_chain = self.llm_chain | self.parser
@@ -59,7 +59,7 @@ class PydanticToolChain(ToolChain):
     @override
     def _get_reducer(self, split: bool = False) -> Any:
         if not split:
-            return ToolChainUtils.pop
+            return ToolChainUtils.unwrap
         return PydanticToolChain._merge_pydantic_list
 
     @override
@@ -84,10 +84,10 @@ class AgentToolChain(ToolChain):
         return ToolsAgentOutputParser()
 
     def _get_reducer(self, split: bool = False) -> Any:
-        return self._reduce_agent
+        return self._reduce_result
 
-    def _reduce_agent(self, items: list) -> Any:
-        agent_result = ToolChainUtils.pop(items)
+    def _reduce_result(self, items: list) -> Any:
+        agent_result = ToolChainUtils.unwrap(items)
         if isinstance(agent_result, AgentFinish):
             return agent_result.return_values['output']
         else:
@@ -115,6 +115,6 @@ class ToolChainUtils:
         return {"input": input}
 
     @staticmethod
-    def pop(x: map) -> Any:
+    def unwrap(x: map) -> Any:
         for i in x:
             return i

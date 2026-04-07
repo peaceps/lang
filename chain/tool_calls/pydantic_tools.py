@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel, Field
-from core.llm_chain import PydanticToolChain
+from chain.core.llm_chain import PydanticToolChain
 
 
 class TaggingJob:
@@ -47,7 +47,7 @@ class PersonJob:
 
 class ArticleJob:
 
-    content: str = (Path(__file__).resolve().parent / "resources" / "lilianweng_posts_2023-06-23-agent_content.txt").read_text(encoding="utf-8")
+    content: str = (Path(__file__).resolve().parent.parent / "resources" / "lilianweng_posts_2023-06-23-agent_content.txt").read_text(encoding="utf-8")
 
     class ArticleSummary(BaseModel):
         """Overview of a section of article."""
@@ -88,12 +88,8 @@ class ArticleJob:
         chain.invoke(ArticleJob.content, split=True)
 
 
-def main() -> None:
+def run() -> None:
     TaggingJob.tagging()
     PersonJob.extract_person()
     ArticleJob.summary()
     ArticleJob.extract_paper()
-
-
-if __name__ == "__main__":
-    main()

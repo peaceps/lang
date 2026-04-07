@@ -1,10 +1,11 @@
 from langchain_core.tools import tool
+from urllib.error import HTTPError
 from pydantic import BaseModel, Field
 import requests
 import datetime
 from datetime import timedelta
 import wikipedia
-from core.llm_chain import AgentToolChain
+from chain.core.llm_chain import AgentToolChain
 
 
 class TemperatureInput(BaseModel):
@@ -29,7 +30,7 @@ def get_temperature(latitude: float, longitude: float) -> str:
     if response.status_code == 200:
         results = response.json()
     else:
-        raise Exception(f"Failed to fetch temperature: {response.status_code}")
+        raise HTTPError(response.url, response.status_code, f"Failed to fetch temperature: {response.status_code}")
 
     current_utc_time = datetime.datetime.now(datetime.UTC)
     time_list = [datetime.datetime.fromisoformat((current_utc_time + timedelta(hours=i)).isoformat()) for i in range(24)]
@@ -43,29 +44,21 @@ def get_temperature(latitude: float, longitude: float) -> str:
 def search_wikipedia(query: str) -> str:
     """Search the Wikipedia for the given query and get the summary."""
     titles = wikipedia.search(query)
-    summries = []
+    summaries = []
     for page_title in titles[:3]:
         try:
             wiki_page = wikipedia.page(title=page_title, auto_suggest=False)
-            summries.append(f"Page: {page_title}\nSummary: {wiki_page.summary}")
+            summaries.append(f"Page: {page_title}\nSummary: {wiki_page.summary}")
         except wikipedia.exceptions.PageError:
             pass
-    if not summries:
+    if not summaries:
         return "No summary found for the given query."
-    return "\n\n".join(summries)
+    return "\n\n".join(summaries)
 
 
-def agents() -> None:
+def run() -> None:
     tools = [search_wikipedia, get_temperature]
     model = AgentToolChain(tools=tools)
     model.invoke("what is the temperature in Beijing?")
     model.invoke("what is the summary of the page 'Hangzhou'?")
     model.invoke("hi!")
-
-
-def main() -> None:
-    agents()
-
-
-if __name__ == "__main__":
-    main()
