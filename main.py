@@ -5,7 +5,7 @@ from chain.embedding import run as erun
 
 
 def main() -> None:
-    erun()
+    arun()
 
 
 if __name__ == "__main__":

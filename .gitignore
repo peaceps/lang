@@ -2,3 +2,5 @@
 .venv/
 **/__pycache__/
 config/llmgw_config.json
+pyproject.toml
+uv.lock
