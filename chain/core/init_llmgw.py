@@ -38,7 +38,7 @@ def _normalize_tool_choice(value: str | dict[str, Any] | None) -> str | dict[str
 
 
 def _load_llm_gateway_config() -> dict:
-    config_path = Path(__file__).resolve().parent.parent / "config" / "llmgw_config.json"
+    config_path = Path(__file__).resolve().parent.parent.parent / "config" / "llmgw_config.json"
     with open(config_path, encoding="utf-8") as f:
         return json.load(f)["llm_gateway"]
 
