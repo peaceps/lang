@@ -20,7 +20,7 @@ class ToolChain:
         ])
         self.llm = get_openai_client(
             tools=tools,
-            tool_choice=None if tool_choice is None else {"name": tool_choice},
+            tool_choice=tool_choice,
         )
         self.llm_chain = self.prompt_template | self.llm
         self.parser = self._get_parser()
@@ -43,12 +43,11 @@ class ToolChain:
 
 class PydanticToolChain(ToolChain):
 
-    def __init__(self, tool_class: type[BaseModel], system_prompt="Think carefully. And finally call a tool."):
+    def __init__(self, tool_class: type[BaseModel],
+     system_prompt="Think carefully. And finally call a tool, must call a tool."):
         self.tool_class = tool_class
-        # tool_choice 里的 name 必须与 tools[].function.name 一致（Pydantic 可能用 schema title，不一定等于 __name__）
-        self._openai_tool = convert_to_openai_tool(tool_class)
-        self._tool_fn_name = self._openai_tool["function"]["name"]
-        super().__init__([self._openai_tool], self._tool_fn_name, system_prompt)
+        openai_tool = convert_to_openai_tool(tool_class)
+        super().__init__([openai_tool], "required", system_prompt)
 
     @override
     def _get_parser(self) -> Any:
@@ -65,6 +64,11 @@ class PydanticToolChain(ToolChain):
     @override
     def _call_model(self, input: str, split: bool = False) -> Any:
         res = super()._call_model(input, split)
+        if res is None:
+            raise ValueError(
+                "Model output had no matching tool call (parser returned None). "
+                "Check tool_choice matches tools[].function.name."
+            )
         return self.tool_class.model_validate(res)
         
     @staticmethod
