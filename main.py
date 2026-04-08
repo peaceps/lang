@@ -3,8 +3,11 @@ from chain.tool_calls.openapi_tools import run as orun
 from chain.tool_calls.agent_tools import run as arun
 from chain.rag.retriever import run as erun
 
-
+    
 def main() -> None:
+    erun()
+    orun()
+    prun()
     arun()
 
 
