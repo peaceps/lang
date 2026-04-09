@@ -1,5 +1,5 @@
 from chain.core.llm_chain import FunctionCallingToolChain
-from chain.functions.tools import search_wikipedia, get_temperature
+from chain.tools.functions import search_wikipedia, get_temperature
 
 def run() -> None:
     tools = [search_wikipedia, get_temperature]
