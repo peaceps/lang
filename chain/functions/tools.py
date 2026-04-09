@@ -5,7 +5,6 @@ import requests
 import datetime
 from datetime import timedelta
 import wikipedia
-from chain.core.llm_chain import AgentToolChain
 
 
 class TemperatureInput(BaseModel):
@@ -54,11 +53,3 @@ def search_wikipedia(query: str) -> str:
     if not summaries:
         return "No summary found for the given query."
     return "\n\n".join(summaries)
-
-
-def run() -> None:
-    tools = [search_wikipedia, get_temperature]
-    model = AgentToolChain(tools=tools)
-    model.invoke("what is the temperature in Beijing?")
-    model.invoke("what is the summary of the page 'Hangzhou'?")
-    model.invoke("hi!")

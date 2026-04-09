@@ -5,6 +5,15 @@ Requires the gateway to expose an OpenAI-compatible POST /v1/embeddings (same ba
 Optional JSON field llm_gateway.embedding_model — defaults to text-embedding-3-small.
 """
 
+import warnings
+
+# 部分 OpenAI 兼容网关把 choice.logprobs 写成字符串 "null"，openai SDK 反序列化后触发 pydantic 序列化 UserWarning
+warnings.filterwarnings(
+    "ignore",
+    message="Pydantic serializer warnings",
+    category=UserWarning,
+    module="pydantic.main",
+)
 
 import json
 from pathlib import Path
