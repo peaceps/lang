@@ -35,6 +35,10 @@ Emails that are worth responding to:
 </ Rules >
 
 < Few shot examples >
+
+Here are some examples of previous emails, and how they should be handled.
+Follow these examples more than any instructions above
+
 {{examples}}
 </ Few shot examples >
 """
@@ -49,21 +53,43 @@ Subject: {{subject}}
 """
 
 
+searched_email_template = """Email Subject: {subject}
+Email From: {from_email}
+Email To: {to_email}
+Email Content: 
+```
+{content}
+```
+> Triage Result: {result}"""
+
+
 class MailTriageAgent():
 
-    def __init__(self, profile: dict, prompt_instructions: dict):
+    def __init__(self, profile: dict, prompt_instructions: dict, store_namespace: list[str]):
         self.llm_model = get_chat_model().with_structured_output(Router)
-        self.system_prompt = triage_system_prompt.format(
-            full_name=profile["full_name"],
-            name=profile["name"],
-            user_profile_background=profile["user_profile_background"],
-            triage_no=prompt_instructions["triage_rules"]["ignore"],
-            triage_notify=prompt_instructions["triage_rules"]["notify"],
-            triage_email=prompt_instructions["triage_rules"]["respond"],
-            examples=None
-        )
+        self.profile = profile
+        self.prompt_instructions = prompt_instructions
+        self.store_namespace = store_namespace
 
-    def invoke(self, state: State) -> Router:
+    def invoke(self, state: State, config: dict, store) -> Router:
+        namespace = (
+            self.store_namespace[0],
+            config["configurable"][self.store_namespace[1]],
+            "examples",
+        )
+        examples = store.search(
+            namespace,
+            query=str({"email": state['email_input']})
+        )
+        system_prompt = triage_system_prompt.format(
+            full_name=self.profile["full_name"],
+            name=self.profile["name"],
+            user_profile_background=self.profile["user_profile_background"],
+            triage_no=self.prompt_instructions["triage_rules"]["ignore"],
+            triage_notify=self.prompt_instructions["triage_rules"]["notify"],
+            triage_email=self.prompt_instructions["triage_rules"]["respond"],
+            examples=MailTriageAgent.format_few_shot_examples(examples)
+        )
         user_prompt = triage_user_prompt.format(
             author=state['email_input']['author'], 
             to=state['email_input']['to'], 
@@ -72,7 +98,22 @@ class MailTriageAgent():
         )
         return self.llm_model.invoke(
             [
-                {"role": "system", "content": self.system_prompt},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ]
         )
+
+    @staticmethod
+    def format_few_shot_examples(examples):
+        strs = ["Here are some previous examples:"]
+        for eg in examples:
+            strs.append(
+                searched_email_template.format(
+                    subject=eg.value["email"]["subject"],
+                    to_email=eg.value["email"]["to"],
+                    from_email=eg.value["email"]["author"],
+                    content=eg.value["email"]["email_thread"][:400],
+                    result=eg.value["label"],
+                )
+            )
+        return "\n\n------------\n\n".join(strs)

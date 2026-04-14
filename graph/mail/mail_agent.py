@@ -1,12 +1,16 @@
+from typing import Any, Literal
+
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
-from core.llm_graph import get_graph_agent
-from graph.mail.mail_triage_agent import MailTriageAgent
-from graph.mail.definitions import State
+from langgraph.graph import END, START, StateGraph
+from langgraph.store.base import BaseStore
 from langgraph.types import Command
-from typing import Literal
-from langgraph.graph import StateGraph, START, END
-from graph.graph_ui import display
 from langmem import create_manage_memory_tool, create_search_memory_tool
+
+from core.llm_graph import get_graph_agent
+from graph.graph_ui import display
+from graph.mail.definitions import State
+from graph.mail.mail_triage_agent import MailTriageAgent
 
 
 agent_system_prompt = f"""
@@ -54,18 +58,19 @@ def check_calendar_availability(day: str) -> str:
     return f"Available times on {day}: 9:00 AM, 2:00 PM, 4:00 PM"
 
 
+store_namespace = ["email_assistant", "langgraph_user_id"]
 manage_memory_tool = create_manage_memory_tool(
-    namespace=("email_assistant", "{langgraph_user_id}", "collection")
+    namespace=(store_namespace[0], f"{{{store_namespace[1]}}}", "collection")
 )
 search_memory_tool = create_search_memory_tool(
-    namespace=("email_assistant", "{langgraph_user_id}", "collection")
+    namespace=(store_namespace[0], f"{{{store_namespace[1]}}}", "collection")
 )
 
 
 class MailAgent():
 
     def __init__(self, profile: dict, prompt_instructions: dict):
-        self.triage_agent = MailTriageAgent(profile, prompt_instructions)
+        self.triage_agent = MailTriageAgent(profile, prompt_instructions, store_namespace)
         self.llm_model = get_graph_agent(
             tools=[write_email, schedule_meeting, check_calendar_availability, manage_memory_tool, search_memory_tool],
             system_prompt=agent_system_prompt.format(instructions=prompt_instructions["agent_instructions"], **profile)
@@ -76,10 +81,14 @@ class MailAgent():
             .add_edge(START, "triage_router")\
             .compile(store=self.llm_model.store)
     
-    def triage_router(self, state: State) -> Command[
-        Literal["response_agent", "__end__"]
-    ]:
-        result = self.triage_agent.invoke(state)
+    def triage_router(
+        self,
+        state: State,
+        *,
+        config: RunnableConfig,
+        store: BaseStore,
+    ) -> Command[Literal["response_agent", "__end__"]]:
+        result = self.triage_agent.invoke(state, config=config, store=store)
 
         if result.classification == "respond":
             print("📧 Classification: RESPOND - This email requires a response")
@@ -108,5 +117,5 @@ class MailAgent():
     def draw_graph(self) -> None:
         display(self.graph)
 
-    def invoke(self, input: dict, config: dict) -> str:
+    def invoke(self, input: dict, config: RunnableConfig | dict[str, Any]) -> dict:
         return self.graph.invoke(input, config=config)
