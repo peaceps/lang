@@ -6,7 +6,7 @@ from langchain_core.agents import AgentFinish
 from langchain_classic.agents.output_parsers import ToolsAgentOutputParser
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from chain.core.init_llmgw import get_openai_client
+from core.init_llmgw import get_openai_chat_model
 from pydantic import BaseModel
 from langchain_classic.agents.format_scratchpad.tools import format_to_tool_messages
 from langchain_core.chat_history import InMemoryChatMessageHistory
@@ -17,7 +17,7 @@ class ToolChain:
 
     def __init__(self, tools: List[Any], tool_choice: str=None, system_prompt: str = "Think carefully."):
         prompt_template = ChatPromptTemplate.from_messages(self._get_prompt_messages(system_prompt))
-        llm = get_openai_client(tools=tools, tool_choice=tool_choice)
+        llm = get_openai_chat_model(tools=tools, tool_choice=tool_choice)
         parser = self._get_parser()
         self.llm_chain = prompt_template | llm | parser
 

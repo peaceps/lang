@@ -1,4 +1,4 @@
-from chain.core.init_llmgw import get_rag_retriever
+from core.init_llmgw import get_rag_retriever
 
 
 def run() -> None:

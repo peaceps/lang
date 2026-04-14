@@ -1,17 +1,18 @@
-from chain.tools.pydantic_tools import run as prun
-from chain.tools.openapi_tools import run as orun
-from chain.tools.function_calling_tool import run as frun
-from chain.tools.agent import run as arun
-from chain.rag.retriever import run as erun
+from chain.tools.pydantic_tools import run as pydantic_run
+from chain.tools.openapi_tools import run as openapi_run
+from chain.tools.function_calling_tool import run as function_calling_run
+from chain.tools.agent import run as agent_run
+from chain.rag.retriever import run as retriever_run
+from graph.mail.mail import run as mail_run
 
 
 def main() -> None:
-    erun()
-    orun()
-    prun()
-    frun()
-    arun()
-
+    # retriever_run()
+    # openapi_run()
+    # pydantic_run()
+    # function_calling_run()
+    # agent_run()
+    mail_run()
 
 if __name__ == "__main__":
     main()
