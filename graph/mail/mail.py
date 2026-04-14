@@ -1,4 +1,5 @@
-from graph.mail.mail_agent import MailAgent
+import uuid
+from graph.mail.mail_agent import MailAgent, store_namespace
 
 
 profile = {
@@ -16,7 +17,7 @@ prompt_instructions = {
     "agent_instructions": "Use these tools when appropriate to help manage John's tasks efficiently. Remember to search memory before answering any questions."
 }
 
-email = [
+emails = [
 {
     "author": "Alice Smith <alice.smith@company.com>",
     "to": "John Doe <john.doe@company.com>",
@@ -68,15 +69,62 @@ Nobel prize committee""",
     "email_thread": """
 Any update on my previous ask?""",
 },
+{
+    "author": "Sarah Chen <sarah.chen@company.com>",
+    "to": "John Doe <john.doe@company.com>",
+    "subject": "Update: Backend API Changes Deployed to Staging",
+    "email_thread": """Hi John,
+
+Just wanted to let you know that I've deployed the new authentication endpoints we discussed to the staging environment. Key changes include:
+
+- Implemented JWT refresh token rotation
+- Added rate limiting for login attempts
+- Updated API documentation with new endpoints
+
+All tests are passing and the changes are ready for review. You can test it out at staging-api.company.com/auth/*
+
+No immediate action needed from your side - just keeping you in the loop since this affects the systems you're working on.
+
+Best regards,
+Sarah
+"""
+},
+{
+    "author": "Tom Jones <tome.jones@bar.com>",
+    "to": "John Doe <john.doe@company.com>",
+    "subject": "Quick question about API documentation",
+    "email_thread": """Hi John - want to buy documentation?""",
+}
 ]
 
-config = { "configurable": { "langgraph_user_id": "john_doe" } }
+
+examples = [
+    {"email": emails[0], "label": "respond"},
+    {"email": emails[1], "label": "ignore"},
+    {"email": emails[2], "label": "notify"},
+    {"email": emails[3], "label": "respond"},
+    {"email": emails[4], "label": "ignore"},
+    {"email": emails[5], "label": "respond"},
+]
+
+
+config = { "configurable": { store_namespace[1]: "smith" } }
+
 
 def run() -> None:
     email_agent = MailAgent(profile, prompt_instructions)
-    res = email_agent.invoke({"email_input": email[0]}, config=config)
-    for m in res["messages"]:
-        m.pretty_print()
-    res = email_agent.invoke({"email_input": email[3]}, config=config)
+    store = email_agent.graph.store
+    store.put(
+        (store_namespace[0], config["configurable"][store_namespace[1]], "examples"),
+        str(uuid.uuid4()),
+        examples[5]
+    )
+    test_mail = {
+        "author": "Joe Kite <joe.kite@bar.com>",
+        "to": "John Doe <john.doe@company.com>",
+        "subject": "Quick question about API documentation",
+        "email_thread": """Hi John - want to buy documentation?""",
+    }
+    res = email_agent.invoke({"email_input": test_mail}, config=config)
     for m in res["messages"]:
         m.pretty_print()
