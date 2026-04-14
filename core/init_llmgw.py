@@ -22,9 +22,11 @@ from typing import Any
 from langchain_core.runnables import RunnableLambda
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.vectorstores import InMemoryVectorStore, VectorStoreRetriever
+from langchain_core.embeddings import Embeddings
+from langchain.chat_models import BaseChatModel, init_chat_model
 
 
-CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "llmgw_config.json"
+CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "llmgw_config.json"
 
 
 def _load_llm_gateway_config() -> dict:
@@ -52,8 +54,8 @@ def load_env() -> dict:
 gw = load_env()
 
 
-def get_rag_retriever(docs: list[str]) -> VectorStoreRetriever:
-    embedding = OpenAIEmbeddings(
+def get_embeddings() -> Embeddings:
+    return OpenAIEmbeddings(
         model=gw["embedding_model"],
         api_key=gw["api_key"],
         base_url=gw["base"].rstrip("/"),
@@ -61,10 +63,14 @@ def get_rag_retriever(docs: list[str]) -> VectorStoreRetriever:
         # DashScope 等兼容接口只接受字符串 input；默认 True 会发 token id 列表导致 400
         check_embedding_ctx_length=False,
     )
+
+
+def get_rag_retriever(docs: list[str]) -> VectorStoreRetriever:
+    embedding = get_embeddings()
     return InMemoryVectorStore.from_texts(docs, embedding=embedding).as_retriever()
 
 
-def get_openai_client(
+def get_openai_chat_model(
     tools: list[dict] | None = None,
     tool_choice: str | dict[str, Any] | None = None,
 ) -> RunnableLambda:
@@ -83,3 +89,16 @@ def get_openai_client(
             tool_choice=tool_choice,
         )
     return chat
+
+
+def get_chat_model(provider: str = "openai") -> BaseChatModel:
+    return init_chat_model(
+        model_provider=provider,
+        model=gw["model"],
+        api_key=gw["api_key"],
+        base_url=gw["base"].rstrip("/"),
+        default_headers=gw["headers"],
+        temperature=gw["temperature"],
+        max_tokens=gw["max_tokens"],
+        timeout=gw["timeout"]
+    )

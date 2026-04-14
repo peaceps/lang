@@ -1,4 +1,4 @@
-from chain.core.llm_chain import FunctionCallingToolChain
+from core.llm_chain import FunctionCallingToolChain
 from chain.tools.functions import search_wikipedia, get_temperature
 
 def run() -> None:

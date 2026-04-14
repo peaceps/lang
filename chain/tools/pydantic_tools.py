@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel, Field
-from chain.core.llm_chain import PydanticToolChain
+from core.llm_chain import PydanticToolChain
 
 
 class TaggingJob:
