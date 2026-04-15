@@ -1,5 +1,7 @@
 import uuid
-from graph.mail.mail_agent import MailAgent, store_namespace
+from graph.mail.mail_agent import MailAgent
+from core.init_llmgw import get_multi_prompt_optimizer
+from tools.store_utils import get_examples_store_namespace, get_config_from_user, set_store_config
 
 
 profile = {
@@ -94,7 +96,37 @@ Sarah
     "to": "John Doe <john.doe@company.com>",
     "subject": "Quick question about API documentation",
     "email_thread": """Hi John - want to buy documentation?""",
-}
+},
+{
+    "author": "Joe Kite <joe.kite@bar.com>",
+    "to": "John Doe <john.doe@company.com>",
+    "subject": "Quick question about API documentation",
+    "email_thread": """Hi John - want to buy documentation?""",
+},
+{
+    "author": "Alice Jones <alice.jones@bar.com>",
+    "to": "John Doe <john.doe@company.com>",
+    "subject": "Service down",
+    "email_thread": """Hi John,
+
+Urgent issue - your service is down. Is there a reason why""",
+},
+{
+    "author": "Joe Kite <joe.kite@bar.com>",
+    "to": "John Doe <john.doe@company.com>",
+    "subject": "Quick question about API documentation",
+    "email_thread": """
+Hi John,
+
+I was reviewing the API documentation, I found some issues. Could you help me fix them?
+
+Specifically, I'm looking at:
+- /auth/login
+- /auth/logout
+
+Thanks!
+Joe""",
+},
 ]
 
 
@@ -105,26 +137,29 @@ examples = [
     {"email": emails[3], "label": "respond"},
     {"email": emails[4], "label": "ignore"},
     {"email": emails[5], "label": "respond"},
+    {"email": emails[6], "label": "respond"},
+    {"email": emails[7], "label": "respond"},
+    {"email": emails[8], "label": "respond"},
 ]
 
 
-config = { "configurable": { store_namespace[1]: "smith" } }
+set_store_config("email_assistant", "langgraph_user_id")
+
+
+def inject_examples(email_agent, config, i):
+    email_agent.graph.store.put(
+        get_examples_store_namespace(config),
+        str(uuid.uuid4()),
+        examples[i]
+    )
 
 
 def run() -> None:
+    config = get_config_from_user('smith')
     email_agent = MailAgent(profile, prompt_instructions)
-    store = email_agent.graph.store
-    store.put(
-        (store_namespace[0], config["configurable"][store_namespace[1]], "examples"),
-        str(uuid.uuid4()),
-        examples[5]
-    )
-    test_mail = {
-        "author": "Joe Kite <joe.kite@bar.com>",
-        "to": "John Doe <john.doe@company.com>",
-        "subject": "Quick question about API documentation",
-        "email_thread": """Hi John - want to buy documentation?""",
-    }
-    res = email_agent.invoke({"email_input": test_mail}, config=config)
-    for m in res["messages"]:
-        m.pretty_print()
+    inject_examples(email_agent, config, 6)
+    res = email_agent.invoke({"email_input": emails[7]}, config)
+    email_agent.feedback_trace(res["messages"], "Always sign your emails `Lovely Joe Kite`", config)
+    res = email_agent.invoke({"email_input": emails[6]}, config)
+    email_agent.feedback_trace(res["messages"], "Ignore any emails from Joe Kite", config)
+    res = email_agent.invoke({"email_input": emails[8]}, config)

@@ -19,11 +19,12 @@ import json
 from pathlib import Path
 from typing import Any
 
-from langchain_core.runnables import RunnableLambda
+from langchain_core.runnables import RunnableLambda, Runnable
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.vectorstores import InMemoryVectorStore, VectorStoreRetriever
 from langchain_core.embeddings import Embeddings
 from langchain.chat_models import BaseChatModel, init_chat_model
+from langmem import create_multi_prompt_optimizer
 
 
 CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "llmgw_config.json"
@@ -101,4 +102,11 @@ def get_chat_model(provider: str = "openai") -> BaseChatModel:
         temperature=gw["temperature"],
         max_tokens=gw["max_tokens"],
         timeout=gw["timeout"]
+    )
+
+
+def get_multi_prompt_optimizer() -> Runnable:
+    return create_multi_prompt_optimizer(
+        get_chat_model(),
+        kind="prompt_memory",
     )
