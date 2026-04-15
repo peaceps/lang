@@ -1,4 +1,4 @@
-from chain.tools.functions import search_wikipedia, get_temperature
+from tools.tools import search_wikipedia, get_temperature
 from core.llm_chain import Agent
 
 def run() -> None:

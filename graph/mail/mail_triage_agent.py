@@ -1,5 +1,6 @@
 from graph.mail.definitions import State, Router
 from core.init_llmgw import get_chat_model
+from tools.store_utils import get_prompt_from_store, get_user_store_namespace, get_examples_store_namespace
 
 
 triage_system_prompt = f"""
@@ -65,29 +66,25 @@ Email Content:
 
 class MailTriageAgent():
 
-    def __init__(self, profile: dict, prompt_instructions: dict, store_namespace: list[str]):
+    def __init__(self, profile: dict, prompt_instructions: dict):
         self.llm_model = get_chat_model().with_structured_output(Router)
         self.profile = profile
         self.prompt_instructions = prompt_instructions
-        self.store_namespace = store_namespace
 
     def invoke(self, state: State, config: dict, store) -> Router:
-        namespace = (
-            self.store_namespace[0],
-            config["configurable"][self.store_namespace[1]],
-            "examples",
-        )
         examples = store.search(
-            namespace,
+            get_examples_store_namespace(config),
             query=str({"email": state['email_input']})
         )
+
+        user_namespace = get_user_store_namespace(config)
         system_prompt = triage_system_prompt.format(
             full_name=self.profile["full_name"],
             name=self.profile["name"],
             user_profile_background=self.profile["user_profile_background"],
-            triage_no=self.prompt_instructions["triage_rules"]["ignore"],
-            triage_notify=self.prompt_instructions["triage_rules"]["notify"],
-            triage_email=self.prompt_instructions["triage_rules"]["respond"],
+            triage_no=self._get_rules_from_store(store, user_namespace, "ignore"),
+            triage_notify=self._get_rules_from_store(store, user_namespace, "notify"),
+            triage_email=self._get_rules_from_store(store, user_namespace, "respond"),
             examples=MailTriageAgent.format_few_shot_examples(examples)
         )
         user_prompt = triage_user_prompt.format(
@@ -102,6 +99,9 @@ class MailTriageAgent():
                 {"role": "user", "content": user_prompt},
             ]
         )
+
+    def _get_rules_from_store(self, store, namespace, key: str):
+        return get_prompt_from_store(store, namespace, f"triage_{key}", self.prompt_instructions["triage_rules"][key])
 
     @staticmethod
     def format_few_shot_examples(examples):

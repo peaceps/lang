@@ -1,6 +1,15 @@
+from typing import Any
+
+from langchain.agents.middleware.types import AgentState
 from pydantic import BaseModel, Field
-from typing_extensions import TypedDict, Literal, Annotated
+from typing_extensions import Annotated, Literal, NotRequired, TypedDict
 from langgraph.graph import add_messages
+
+
+class ResponseAgentState(AgentState[Any]):
+    """create_agent 子图状态：保留 messages/jump_to 等，并带上 email_input 供 dynamic_prompt 读取。"""
+
+    email_input: NotRequired[dict]
 
 
 class State(TypedDict):
