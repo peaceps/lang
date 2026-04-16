@@ -4,6 +4,7 @@ from chain.tools.function_calling_tool import run as function_calling_run
 from chain.tools.agent import run as agent_run
 from chain.rag.retriever import run as retriever_run
 from graph.mail.mail import run as mail_run
+from graph.react.react import run as react_run
 
 
 def main() -> None:
@@ -12,7 +13,8 @@ def main() -> None:
     # pydantic_run()
     # function_calling_run()
     # agent_run()
-    mail_run()
+    # mail_run()
+    react_run()
 
 if __name__ == "__main__":
     main()
