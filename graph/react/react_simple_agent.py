@@ -2,10 +2,9 @@ import re
 from core.init_llmgw import get_openai_chat_model
 
 action_re = re.compile(r"^Action: (\w+): (.*)$")
-max_iterations = 10
 
-class ReactAgent:
-    def __init__(self, system_prompt: str, known_actions: dict):
+class ReactSimpleAgent:
+    def __init__(self, system_prompt: str, known_actions: dict, max_iterations: int = 10):
         self.llm_model = get_openai_chat_model()
         self.known_actions = known_actions
         self.system_prompt = system_prompt

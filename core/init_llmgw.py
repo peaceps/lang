@@ -25,6 +25,7 @@ from langchain_core.vectorstores import InMemoryVectorStore, VectorStoreRetrieve
 from langchain_core.embeddings import Embeddings
 from langchain.chat_models import BaseChatModel, init_chat_model
 from langmem import create_multi_prompt_optimizer
+from langchain_tavily import TavilySearch
 
 
 CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "llmgw_config.json"
@@ -48,7 +49,8 @@ def load_env() -> dict:
         "headers": headers,
         "timeout": config.get("timeout", 300),
         "temperature": float(config.get("temperature", 0.1)),
-        "max_tokens": int(config.get("max_tokens", 8000))
+        "max_tokens": int(config.get("max_tokens", 8000)),
+        "tavily_api_key": config.get("tavily_api_key")
     }
 
 
@@ -110,3 +112,7 @@ def get_multi_prompt_optimizer() -> Runnable:
         get_chat_model(),
         kind="prompt_memory",
     )
+
+
+def get_tavily_search_model(max_results: int = 3) -> TavilySearch:
+    return TavilySearch(max_results=max_results, tavily_api_key=gw["tavily_api_key"])
