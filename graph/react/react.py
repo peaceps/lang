@@ -68,4 +68,6 @@ known_actions = {
 def run() -> None:
     # react_agent = ReactSimpleAgent(dog_system_prompt, known_actions)
     react_agent = ReactGraphAgent(weather_system_prompt, [get_tavily_search_model(max_results=4)])
-    react_agent.invoke("2025年欧冠的冠军是哪个队伍？它所在的城市当年的GDP是多少？")
+    # react_agent.invoke("2025年欧冠的冠军是哪个队伍？它所在的城市当年的GDP是多少？")
+    config = {"configurable": {"thread_id": "123"}}
+    react_agent.invoke_async(["杭州天气如何？", "北京呢？哪里更热？"], config)

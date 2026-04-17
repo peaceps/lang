@@ -8,6 +8,7 @@ class ReactSimpleAgent:
         self.llm_model = get_openai_chat_model()
         self.known_actions = known_actions
         self.system_prompt = system_prompt
+        self.max_iterations = max_iterations
         self.messages = [("system", self.system_prompt)]
     
     def call_model(self, input: str) -> None:
@@ -20,7 +21,7 @@ class ReactSimpleAgent:
     def invoke(self, input: str) -> None:
         i = 0
         next_prompt = input
-        while i < max_iterations:
+        while i < self.max_iterations:
             i += 1
             res = self.call_model(next_prompt)
             actions = [
