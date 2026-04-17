@@ -1,7 +1,9 @@
-from graph.react.react_agent import ReactAgent
+from graph.react.react_simple_agent import ReactSimpleAgent
+from graph.react.react_graph_agent import ReactGraphAgent
+from core.init_llmgw import get_tavily_search_model
 
 
-system_prompt = """
+dog_system_prompt = """
 You run in a loop of Thought, Action, PAUSE, Observation.
 At the end of the loop you output an Answer
 Use Thought to describe your thoughts about the question you have been asked.
@@ -35,6 +37,13 @@ Answer: A bulldog weights 51 lbs
 """.strip()
 
 
+weather_system_prompt = """You are a smart research assistant. Use the search engine to look up information. \
+You are allowed to make multiple calls (either together or in sequence). \
+Only look up information when you are sure of what you want. \
+If you need to look up some information before asking a follow up question, you are allowed to do that!
+""".strip()
+
+
 def calculate(what):
     return eval(what)
 
@@ -57,5 +66,6 @@ known_actions = {
 
 
 def run() -> None:
-    react_agent = ReactAgent(system_prompt, known_actions)
-    react_agent.invoke("I have 2 dogs, a border collie and a scottish terrier. What is their combined weight?")
+    # react_agent = ReactSimpleAgent(dog_system_prompt, known_actions)
+    react_agent = ReactGraphAgent(weather_system_prompt, [get_tavily_search_model(max_results=4)])
+    react_agent.invoke("2025年欧冠的冠军是哪个队伍？它所在的城市当年的GDP是多少？")
