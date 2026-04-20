@@ -36,10 +36,14 @@ Answer: A bulldog weights 51 lbs
 """.strip()
 
 
-weather_system_prompt = """You are a smart research assistant. Use the search engine to look up information. \
-You are allowed to make multiple calls (either together or in sequence). \
-Only look up information when you are sure of what you want. \
-If you need to look up some information before asking a follow up question, you are allowed to do that!
+weather_system_prompt = """你是一个智能的研究助手。使用搜索引擎来查找信息。\
+你可以进行多次调用（可以同时进行，也可以按顺序进行）。\
+只有在你明确知道自己想查什么时才进行搜索。\
+如果在提出后续问题之前需要先查找一些信息，你也可以这样做！
+
+重要：对**同一个用户问题**，在已经收到至少一条工具返回的观测结果后，你必须用**一条最终回复**直接回答用户，\
+整合工具结果即可；不要为「核实、纠错、反复确认」而**再次调用搜索工具**，除非用户明确提出了**新的、独立的事实问题**。\
+若工具返回与常识不符，可在回答中简要说明不确定性，但仍须结束本轮工具循环并给出结论。
 """.strip()
 
 
@@ -67,14 +71,14 @@ known_actions = {
 def run() -> None:
     # react_agent = ReactSimpleAgent(dog_system_prompt, known_actions)
     react_agent = ReactGraphAgent(weather_system_prompt)
-    # react_agent.invoke("2025年欧冠的冠军是哪个队伍？它所在的城市当年的GDP是多少？")
-    user1 = {"configurable": {"thread_id": "123"}}
-    user2 = {"configurable": {"thread_id": "321"}}
-    user3 = {"configurable": {"thread_id": "444"}}
-    react_agent.invoke_stream(["杭州天气如何？"], user1)
-    react_agent.invoke_sync(["巴黎今年的GPD是多少？"], user2)
-    react_agent.invoke_steps(["伦敦的经纬度是多少？"], user3)
-    react_agent.invoke_sync(["北京呢？"], user3)
-    react_agent.invoke_steps(["北京呢？"], user1)
-    react_agent.invoke_stream(["北京呢？"], user2)
-    react_agent.shutdown()
+    # user1 = {"configurable": {"thread_id": "123"}}
+    # user2 = {"configurable": {"thread_id": "321"}}
+    # user3 = {"configurable": {"thread_id": "444"}}
+    # react_agent.invoke_stream(["杭州天气如何？"], user1)
+    # react_agent.invoke_sync(["巴黎今年的GPD是多少？"], user2)
+    # react_agent.invoke_steps(["伦敦的经纬度是多少？"], user3)
+    # react_agent.invoke_stream(["北京呢？"], user3)
+    # react_agent.invoke_steps(["北京呢？"], user1)
+    # react_agent.invoke_sync(["北京呢？"], user2)
+    # react_agent.shutdown()
+    react_agent.invoke_chat()
