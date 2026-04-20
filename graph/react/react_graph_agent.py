@@ -1,14 +1,16 @@
-import operator
 import asyncio
+import operator
 import sqlite3
-import aiosqlite
+from pathlib import Path
 from typing import Annotated, TypedDict
 
+import aiosqlite
 from langchain_core.messages import AnyMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import END, StateGraph
 
+from core.init_llmgw import get_tavily_search_model
 from core.init_llmgw import get_openai_chat_model
 
 
@@ -17,22 +19,34 @@ class AgentState(TypedDict):
 
 
 class ReactGraphAgent:
-    def __init__(self, system_prompt: str, tools: dict):
+    def __init__(
+        self,
+        system_prompt: str,
+        tools: dict = []
+    ):
+        tools = [get_tavily_search_model(max_results=4)] + tools
         self.llm_model = get_openai_chat_model(tools)
         self.system_prompt = system_prompt
         self.tool_map = {t.name: t for t in tools}
+        self._checkpoint_path = Path(__file__).resolve().parent / ".checkpoints" / "react_graph.sqlite"
 
     def _init_sync_graph(self):
-        if not hasattr(self, 'graph'):
-            conn = sqlite3.connect(":memory:")
-            checkpointer = SqliteSaver(conn)
-            self.graph = self._init_graph(checkpointer)
+        self._ensure_checkpoint_parent()
+        conn = sqlite3.connect(
+            str(self._checkpoint_path),
+            check_same_thread=False,
+        )
+        checkpointer = SqliteSaver(conn)
+        self.graph = self._init_graph(checkpointer)
 
     async def _init_async_graph(self):
-        if not hasattr(self, 'async_graph'):
-            conn = await aiosqlite.connect(":memory:")
-            checkpointer = AsyncSqliteSaver(conn)
-            self.async_graph = self._init_graph(checkpointer)
+        self._ensure_checkpoint_parent()
+        conn = await aiosqlite.connect(str(self._checkpoint_path))
+        checkpointer = AsyncSqliteSaver(conn)
+        self.async_graph = self._init_graph(checkpointer)
+
+    def _ensure_checkpoint_parent(self) -> None:
+        self._checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
 
     def _init_graph(self, checkpointer):
         return StateGraph(AgentState)\
@@ -66,8 +80,9 @@ class ReactGraphAgent:
         for i in input:
             res = self.graph.invoke({"messages": [HumanMessage(i)]}, config)
             print(res['messages'][-1].content)
+        self.graph.checkpointer.conn.close()
 
-    def invoke_stream(self, input: str | list[str], config) -> None:
+    def invoke_steps(self, input: str | list[str], config) -> None:
         self._init_sync_graph()
         input = input if isinstance(input, list) else [input]
         for i in input:
@@ -75,16 +90,22 @@ class ReactGraphAgent:
             res = ""
             for chunk in stream_res:
                 messages = chunk['llm' if 'llm' in chunk else 'action']['messages']
-                print(messages)
+                content = messages[-1].content
+                print(content)
                 res += messages[-1].content
             print("\n")
-            print(res)
+            # print(res)
+        self.graph.checkpointer.conn.close()
 
-    def invoke_async(self, input: str | list[str], config) -> None:
+    def invoke_stream(self, input: str | list[str], config) -> None:
         input = input if isinstance(input, list) else [input]
-        asyncio.run(self.run_async_llm(input, config))
+        asyncio.run(self._run_async_llm(input, config))
 
-    async def run_async_llm(self, input: list[str], config) -> None:
+    def shutdown(self) -> None:
+        self._checkpoint_path.unlink(missing_ok=True)
+        self._checkpoint_path.parent.rmdir()
+
+    async def _run_async_llm(self, input: list[str], config) -> None:
         await self._init_async_graph()
         for i in range(len(input)):
             stream_res = self.async_graph.astream_events({"messages": [HumanMessage(input[i])]}, config)
