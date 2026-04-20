@@ -4,3 +4,4 @@
 config/llmgw_config*.json
 pyproject.toml
 uv.lock
+graph/react/.checkpoints/

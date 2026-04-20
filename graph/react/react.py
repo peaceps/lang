@@ -1,6 +1,5 @@
 from graph.react.react_simple_agent import ReactSimpleAgent
 from graph.react.react_graph_agent import ReactGraphAgent
-from core.init_llmgw import get_tavily_search_model
 
 
 dog_system_prompt = """
@@ -67,7 +66,15 @@ known_actions = {
 
 def run() -> None:
     # react_agent = ReactSimpleAgent(dog_system_prompt, known_actions)
-    react_agent = ReactGraphAgent(weather_system_prompt, [get_tavily_search_model(max_results=4)])
+    react_agent = ReactGraphAgent(weather_system_prompt)
     # react_agent.invoke("2025年欧冠的冠军是哪个队伍？它所在的城市当年的GDP是多少？")
-    config = {"configurable": {"thread_id": "123"}}
-    react_agent.invoke_async(["杭州天气如何？", "北京呢？哪里更热？"], config)
+    user1 = {"configurable": {"thread_id": "123"}}
+    user2 = {"configurable": {"thread_id": "321"}}
+    user3 = {"configurable": {"thread_id": "444"}}
+    react_agent.invoke_stream(["杭州天气如何？"], user1)
+    react_agent.invoke_sync(["巴黎今年的GPD是多少？"], user2)
+    react_agent.invoke_steps(["伦敦的经纬度是多少？"], user3)
+    react_agent.invoke_sync(["北京呢？"], user3)
+    react_agent.invoke_steps(["北京呢？"], user1)
+    react_agent.invoke_stream(["北京呢？"], user2)
+    react_agent.shutdown()
