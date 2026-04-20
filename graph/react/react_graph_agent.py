@@ -59,6 +59,7 @@ class ReactGraphAgent:
         self._checkpoint_path = Path(__file__).resolve().parent / ".checkpoints" / "react_graph.sqlite"
         self.sync_msg_index = {}
         self.require_confirmation_on_tool_call = require_confirmation_on_tool_call
+        self._clear_cache()
 
     def _init_sync_graph(self):
         self._ensure_checkpoint_parent()
@@ -222,5 +223,10 @@ class ReactGraphAgent:
         return ""
 
     def shutdown(self) -> None:
-        self._checkpoint_path.unlink(missing_ok=True)
-        self._checkpoint_path.parent.rmdir()
+        self._clear_cache()
+
+    def _clear_cache(self) -> None:
+        if self._checkpoint_path.exists():
+            self._checkpoint_path.unlink()
+        if self._checkpoint_path.parent.exists():
+            self._checkpoint_path.parent.rmdir()
