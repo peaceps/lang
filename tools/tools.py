@@ -5,6 +5,7 @@ import requests
 import datetime
 from datetime import timedelta
 import wikipedia
+from langchain_core.messages import AnyMessage, HumanMessage, SystemMessage, ToolMessage
 
 
 class TemperatureInput(BaseModel):
@@ -79,3 +80,14 @@ def check_calendar_availability(day: str) -> str:
     """Check calendar availability for a given day."""
     # Placeholder response - in real app would check actual calendar
     return f"Available times on {day}: 9:00 AM, 2:00 PM, 4:00 PM"
+
+
+def extract_content(message: AnyMessage) -> str:
+    if isinstance(message, ToolMessage):
+        return ""
+    if message.content.strip():
+        return message.content.strip()
+    if hasattr(message, 'tool_calls'):
+        tool_call = message.tool_calls[0]
+        return f"准备调用工具: {tool_call['name']}，参数为: {tool_call['args']}"
+    return ""

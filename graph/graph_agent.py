@@ -1,0 +1,89 @@
+from typing import Any
+
+from abc import ABC, abstractmethod
+
+import aiosqlite
+import asyncio
+from pathlib import Path
+
+from langchain_core.runnables import RunnableConfig
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+
+from core.init_llmgw import get_openai_chat_model
+from core.init_llmgw import get_tavily_search_model
+
+from graph.graph_ui import display
+from tools.tools import extract_content
+
+
+class GraphAgent(ABC):
+    def __init__(self, newMemory: bool = True, tools: list[Any]=[]):
+        tools = [get_tavily_search_model(max_results=4)] + tools
+        self.tool_map = {t.name: t for t in tools}
+        self.llm_model = get_openai_chat_model(tools)
+        self._checkpoint_path = Path(__file__).resolve().parent / ".checkpoints" / "react_graph.sqlite"
+        if newMemory:
+            self._clear_cache()
+
+    async def _init_graph(self):
+        self._ensure_checkpoint_parent()
+        conn = await aiosqlite.connect(str(self._checkpoint_path))
+        checkpointer = AsyncSqliteSaver(conn)
+        self.graph = self._create_graph(checkpointer)
+
+    def _ensure_checkpoint_parent(self) -> None:
+        self._checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+
+    def _clear_cache(self) -> None:
+        try:
+            self._checkpoint_path.unlink(missing_ok=True)
+            for suf in ("-wal", "-shm"):
+                Path(f"{self._checkpoint_path}{suf}").unlink(missing_ok=True)
+        except OSError:
+            pass
+
+    def display_graph(self):
+        display(self._create_graph())
+
+    @abstractmethod
+    def _create_graph(self, checkpointer=None):
+        pass
+
+    @abstractmethod
+    def _format_input(self, text: str) -> list[dict[str, Any]]:
+        """子类实现"""
+        ...
+
+    def invoke(self, text: str, user: RunnableConfig | dict[str, Any]) -> None:
+        asyncio.run(self._run_async_llm(self._format_input(text), user))
+
+    async def _run_async_llm(
+        self, parts: list[dict[str, Any] | None], user: RunnableConfig | dict[str, Any]
+    ) -> None:
+        await self._init_graph()
+        for p in parts:
+            await self._run_by_stream(p, user)
+        await self.graph.checkpointer.conn.close()
+
+    async def _run_by_stream(
+        self, p: dict[str, Any] | None, user: RunnableConfig | dict[str, Any]
+    ) -> None:
+        stream_res = self.graph.astream_events(p, user)
+        async for chunk in stream_res:
+            if chunk["event"] == "on_chat_model_stream":
+                content = chunk["data"]["chunk"].content
+                if content:
+                    print(content, end="")
+        await stream_res.aclose()
+        print("\n")
+        snapshot = await self.graph.aget_state(user)
+        if snapshot.next and snapshot.next[0] == 'action' and len(snapshot.values['messages'][-1].tool_calls) > 0:
+            print(extract_content(snapshot.values['messages'][-1]))
+            _input = input("proceed?\n>>>")
+            if _input.lower() != "y":
+                print("aborting")
+            else:
+                await self._run_by_stream(None, user)
+
+    def shutdown(self) -> None:
+        self._clear_cache()
