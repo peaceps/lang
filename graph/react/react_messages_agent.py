@@ -1,9 +1,10 @@
 from uuid import uuid4
-from typing import Annotated, TypedDict, override
+from typing import Annotated, TypedDict, override, Any
 
 from langchain_core.messages import AnyMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph import END, StateGraph
 
+from core.init_llmgw import get_tavily_search_model
 from graph.graph_agent import GraphAgent
 
 
@@ -35,6 +36,11 @@ class ReactMessagesAgent(GraphAgent):
     def __init__(self, system_prompt: str, newMemory: bool = True, tools: dict = []):
         super().__init__(newMemory, tools)
         self.system_prompt = system_prompt
+
+    @override
+    def _init_tools(self, tools: list[Any]):
+        self.tools = [get_tavily_search_model(max_results=4)] + tools
+        self.tool_map = {t.name: t for t in self.tools}
     
     @override
     def _create_graph(self, checkpointer, interrupt_before: list[str] = None):

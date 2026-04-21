@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import uuid4
 
 from abc import ABC, abstractmethod
 
@@ -10,7 +11,6 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from core.init_llmgw import get_openai_chat_model
-from core.init_llmgw import get_tavily_search_model
 
 from graph.graph_ui import display
 from tools.tools import extract_content
@@ -18,12 +18,14 @@ from tools.tools import extract_content
 
 class GraphAgent(ABC):
     def __init__(self, newMemory: bool = True, tools: list[Any]=[]):
-        tools = [get_tavily_search_model(max_results=4)] + tools
-        self.tool_map = {t.name: t for t in tools}
-        self.llm_model = get_openai_chat_model(tools)
+        self._init_tools(tools)
+        self.llm_model = get_openai_chat_model(self.tools)
         self._checkpoint_path = Path(__file__).resolve().parent / ".checkpoints" / "react_graph.sqlite"
         if newMemory:
             self._clear_cache()
+
+    def _init_tools(self, tools: list[Any]):
+        self.tools = tools
 
     async def _init_graph(self):
         self._ensure_checkpoint_parent()
@@ -54,7 +56,12 @@ class GraphAgent(ABC):
         """子类实现"""
         ...
 
-    def invoke(self, text: str, user: RunnableConfig | dict[str, Any]) -> None:
+    def invoke(self, text: str, user: RunnableConfig | dict[str, Any]=None, *args) -> None:
+        if user is None:
+            user = {"configurable": {"thread_id": str(uuid4())}}
+        self._invoke(text, user, *args)
+
+    def _invoke(self, text: str, user: RunnableConfig | dict[str, Any]):
         asyncio.run(self._run_async_llm(self._format_input(text), user))
 
     async def _run_async_llm(

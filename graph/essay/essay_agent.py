@@ -23,8 +23,8 @@ class Queries(BaseModel):
 
 
 class EssayAgent(GraphAgent):
-    def __init__(self, prompts: dict, tools: list[Any]=[]):
-        super().__init__(tools)
+    def __init__(self, prompts: dict, newMemory: bool = True, tools: list[Any]=[]):
+        super().__init__(newMemory, tools)
         self.prompts = prompts
         self.tavily = get_tavily_client()
 
@@ -56,9 +56,9 @@ class EssayAgent(GraphAgent):
         return {"plan": response.content}
 
     def _research_plan_node(self, state: AgentState):
-        queries = self.llm_model.with_structured_output(Queries).invoke([
+        queries = self._queries_llm_model().invoke([
             SystemMessage(content=self.prompts['research_plan']),
-            HumanMessage(content=state['task'])
+            HumanMessage(content=state['task']),
         ])
         content = state['content'] or []
         for q in queries.queries:
@@ -93,9 +93,9 @@ class EssayAgent(GraphAgent):
         return {"critique": response.content}
 
     def _research_critique_node(self, state: AgentState):
-        queries = self.llm_model.with_structured_output(Queries).invoke([
+        queries = self._queries_llm_model().invoke([
             SystemMessage(content=self.prompts['research_critique']),
-            HumanMessage(content=state['critique'])
+            HumanMessage(content=state['critique']),
         ])
         content = state['content'] or []
         for q in queries.queries:
@@ -119,4 +119,8 @@ class EssayAgent(GraphAgent):
             "critique": "",
             "max_revisions": 2,
             "revision_number": 1,
-        }]
+        }]        
+
+    def _queries_llm_model(self):
+        """function_calling：规避部分网关上 json_schema 流式 + logprobs 的兼容问题。llm 勿再绑会与结构化 tool 竞争的其它工具。"""
+        return self.llm_model.with_structured_output(Queries, method="function_calling")
