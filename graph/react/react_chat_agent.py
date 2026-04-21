@@ -15,6 +15,9 @@ class ReactChatAgent(ReactMessagesAgent):
     ):
         super().__init__(system_prompt, newMemory, tools)
 
+    def invoke(self, user: RunnableConfig | dict[str, Any]=None) -> None:
+        super().invoke('', user)
+
     @override
     def _invoke(self, text: str, user: RunnableConfig | dict[str, Any]) -> None:
         asyncio.run(self._run_chat(user))
