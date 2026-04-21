@@ -1,5 +1,6 @@
 from graph.react.react_simple_agent import ReactSimpleAgent
-from graph.react.react_graph_agent import ReactGraphAgent
+from graph.react.react_chat_agent import ReactChatAgent
+from graph.react.react_sync_agent import ReactSyncAgent
 
 
 dog_system_prompt = """
@@ -36,7 +37,7 @@ Answer: A bulldog weights 51 lbs
 """.strip()
 
 
-weather_system_prompt = """你是一个智能的研究助手。使用搜索引擎来查找信息。\
+searcher_system_prompt = """你是一个智能的研究助手。使用搜索引擎来查找信息。\
 你可以进行多次调用（可以同时进行，也可以按顺序进行）。\
 只有在你明确知道自己想查什么时才进行搜索。\
 如果在提出后续问题之前需要先查找一些信息，你也可以这样做！
@@ -69,16 +70,13 @@ known_actions = {
 
 
 def run() -> None:
+    user1 = {"configurable": {"thread_id": "123"}}
+    user2 = {"configurable": {"thread_id": "321"}}
+    user3 = {"configurable": {"thread_id": "111"}}
     # react_agent = ReactSimpleAgent(dog_system_prompt, known_actions)
-    react_agent = ReactGraphAgent(weather_system_prompt)
-    # user1 = {"configurable": {"thread_id": "123"}}
-    # user2 = {"configurable": {"thread_id": "321"}}
-    # user3 = {"configurable": {"thread_id": "444"}}
-    # react_agent.invoke_stream(["杭州天气如何？"], user1)
-    # react_agent.invoke_sync(["巴黎今年的GPD是多少？"], user2)
-    # react_agent.invoke_steps(["伦敦的经纬度是多少？"], user3)
-    # react_agent.invoke_stream(["北京呢？"], user3)
-    # react_agent.invoke_steps(["北京呢？"], user1)
-    # react_agent.invoke_sync(["北京呢？"], user2)
-    # react_agent.shutdown()
-    react_agent.invoke_chat()
+    # sync_agent = ReactSyncAgent(searcher_system_prompt, False)
+    chat_agent = ReactChatAgent(searcher_system_prompt, False)
+    # sync_agent.invoke_sync("巴黎今天的天气怎样？", user1)
+    # sync_agent.invoke_steps("柏林呢？", user1)
+    # sync_agent.invoke_sync("杭州呢？", user1)
+    chat_agent.invoke(user1)

@@ -5,6 +5,7 @@ from chain.tools.agent import run as agent_run
 from chain.rag.retriever import run as retriever_run
 from graph.mail.mail import run as mail_run
 from graph.react.react import run as react_run
+from graph.essay.essay import run as essay_run
 
 
 def main() -> None:
@@ -15,6 +16,7 @@ def main() -> None:
     # agent_run()
     # mail_run()
     react_run()
+    # essay_run()
 
 if __name__ == "__main__":
     main()

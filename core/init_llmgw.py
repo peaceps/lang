@@ -16,9 +16,11 @@ warnings.filterwarnings(
 )
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
+from tavily import TavilyClient
 from langchain_core.runnables import RunnableLambda, Runnable
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.vectorstores import InMemoryVectorStore, VectorStoreRetriever
@@ -116,3 +118,6 @@ def get_multi_prompt_optimizer() -> Runnable:
 
 def get_tavily_search_model(max_results: int = 3) -> TavilySearch:
     return TavilySearch(max_results=max_results, tavily_api_key=gw["tavily_api_key"])
+
+def get_tavily_client() -> TavilyClient:
+    return TavilyClient(api_key=gw["tavily_api_key"])
