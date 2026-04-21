@@ -1,43 +1,55 @@
 from graph.essay.essay_agent import EssayAgent
 
 
-PLAN_PROMPT = """You are an expert writer tasked with writing a high level outline of an essay. \
-Write such an outline for the user provided topic. Give an outline of the essay along with any relevant notes \
-or instructions for the sections."""
-
-WRITER_PROMPT = """You are an essay assistant tasked with writing excellent 5-paragraph essays.\
-Generate the best essay possible for the user's request and the initial outline. \
-If the user provides critique, respond with a revised version of your previous attempts. \
-Utilize all the information below as needed: 
+essay_prompts = {
+    "plan": """你是一位资深写作者，负责为作文撰写高层次提纲。
+请根据用户给出的主题写出提纲，包含各部分的要点，以及任何有助于后续写作的说明或注意事项。""",
+    "writer": """你是一位作文助手，负责写出结构清晰、质量优秀的五段式作文。
+请根据用户的题目与初始提纲，尽力完成作文；若用户提供了修改意见，请在此前版本基础上修订。
+写作时可自由使用下方提供的材料：
 
 ------
 
-{content}"""
+{content}""",
+    "reflection": """你是一位批改作文的教师。
+请针对用户的作文给出批评与修改建议，尽量具体，可涉及篇幅、深度、风格等方面。""",
+    "research_plan": """你是一位资料检索员，需要为接下来的作文写作收集可用信息。
+请生成一组用于搜索的查询词，以获取与主题相关的资料；最多生成 3 条查询。""",
+    "research_critique": """你是一位资料检索员，需要根据下方列出的修改意见，为修订稿收集补充信息。
+请生成一组用于搜索的查询词，以获取与修改需求相关的资料；最多生成 3 条查询。""",
+}
 
-REFLECTION_PROMPT = """You are a teacher grading an essay submission. \
-Generate critique and recommendations for the user's submission. \
-Provide detailed recommendations, including requests for length, depth, style, etc."""
+paper_prompts = {
+    "plan": """你是一位中学生作文写作者，负责为长度在600到800字的作文撰写小提纲。
+请根据用户给出的主题写出提纲，包含各部分的要点，以及任何有助于后续写作的说明或注意事项。字数不超过200字。""",
+    "writer": """你是一位中学生作文助手，负责写出结构清晰、质量优秀的中学生作文。字数在600到800字之间。
+请根据用户的题目与初始提纲，尽力完成作文；若用户提供了修改意见，请在此前版本基础上修订。
+写作时可自由使用下方提供的材料：
 
-RESEARCH_PLAN_PROMPT = """You are a researcher charged with providing information that can \
-be used when writing the following essay. Generate a list of search queries that will gather \
-any relevant information. Only generate 3 queries max."""
+------
 
-RESEARCH_CRITIQUE_PROMPT = """You are a researcher charged with providing information that can \
-be used when making any requested revisions (as outlined below). \
-Generate a list of search queries that will gather any relevant information. Only generate 3 queries max."""
+{content}""",
+    "reflection": """你是一位中学生作文批改教师。
+请针对用户的作文给出批评与修改建议，尽量具体，可涉及篇幅、深度、风格等方面。""",
+    "research_plan": """你是一位中学生作文资料检索员，需要为接下来的作文写作收集可用信息。
+请生成一组用于搜索的查询词，以获取与主题相关的资料；最多生成 3 条查询。不用太复杂，不用太深奥""",
+    "research_critique": """你是一位中学生作文资料检索员，需要根据下方列出的修改意见，为修订稿收集补充信息。
+请生成一组用于搜索的查询词，以获取与修改需求相关的资料；最多生成 3 条查询。不用太复杂，不用太深奥""",
+}
+
+
+selected = paper_prompts
 
 
 prompts = {
-    "plan": PLAN_PROMPT,
-    "writer": WRITER_PROMPT,
-    "reflection": REFLECTION_PROMPT,
-    "research_plan": RESEARCH_PLAN_PROMPT,
-    "research_critique": RESEARCH_CRITIQUE_PROMPT
+    "plan": selected["plan"],
+    "writer": selected["writer"],
+    "reflection": selected["reflection"],
+    "research_plan": selected["research_plan"],
+    "research_critique": selected["research_critique"],
 }
 
 
 def run():
-    user = {"configurable": {"thread_id": "123"}}
     essay_agent = EssayAgent(prompts)
-    essay_agent.invoke("what is the difference between langchain and langsmith", user)
-    # essay_agent.display_graph()
+    essay_agent.invoke("人工智能在校园")

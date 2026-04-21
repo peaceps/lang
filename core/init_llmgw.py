@@ -16,7 +16,6 @@ warnings.filterwarnings(
 )
 
 import json
-import os
 from pathlib import Path
 from typing import Any
 
@@ -78,7 +77,7 @@ def get_rag_retriever(docs: list[str]) -> VectorStoreRetriever:
 def get_openai_chat_model(
     tools: list[dict] | None = None,
     tool_choice: str | dict[str, Any] | None = None,
-) -> RunnableLambda:
+) -> ChatOpenAI:
     chat = ChatOpenAI(
         model=gw["model"],
         api_key=gw["api_key"],

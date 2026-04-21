@@ -1,6 +1,6 @@
 import sqlite3
-from uuid import uuid4
-from typing import override
+from typing import Any, override
+from langchain_core.runnables import RunnableConfig
 
 from langgraph.checkpoint.sqlite import SqliteSaver
 from graph.react.react_messages_agent import ReactMessagesAgent, MessagesAgentState
@@ -27,24 +27,23 @@ class ReactSyncAgent(ReactMessagesAgent):
         checkpointer = SqliteSaver(conn)
         self.graph = self._create_graph(checkpointer, interrupt_before)
 
+    @override
+    def _invoke(self, text: str, user: RunnableConfig | dict[str, Any], steps=False) -> None:
+        if steps:
+            self._invoke_graph(text, user, '_run_by_step', interrupt_before=['action'])
+        else:
+            self._invoke_graph(text, user, '_run_by_sync')
+
     def _invoke_graph(self, text: str | None, user, action, interrupt_before: list[str] = None) -> None:
-        if user is None:
-            user = {"configurable": {"thread_id": str(uuid4())}}
         self._init_graph(interrupt_before)
         for p in self._format_input(text):
             getattr(self, action)(p, user)
         self.graph.checkpointer.conn.close()
 
-    def invoke_sync(self, text: MessagesAgentState|None, user=None) -> None:
-        self._invoke_graph(text, user, '_run_by_sync')
-
     def _run_by_sync(self, p: MessagesAgentState|None, user) -> None:
         res = self.graph.invoke(p, user)
         for msg in res['messages']:
             print(extract_content(msg))
-
-    def invoke_steps(self, text: MessagesAgentState|None, user=None) -> None:
-        self._invoke_graph(text, user, '_run_by_step', interrupt_before=['action'])
 
     def _run_by_step(self, p: MessagesAgentState|None, user) -> None:
         stream_res = self.graph.stream(p, user)
@@ -56,7 +55,7 @@ class ReactSyncAgent(ReactMessagesAgent):
 
     def _loop_step_actions(self, user) -> None:
         if self.graph.get_state(user).next:
-            _input = input("允许调用工具吗？(y/n)\n>>>")
+            _input = input("是否允许调用工具？(y/n)\n>>>")
             if _input.lower() != "y":
                 print("退出工具调用流程")
             else:

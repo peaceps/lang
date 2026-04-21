@@ -1,5 +1,6 @@
 import asyncio
-from uuid import uuid4
+from typing import Any
+from langchain_core.runnables import RunnableConfig
 from typing import override
 
 from graph.react.react_messages_agent import ReactMessagesAgent
@@ -15,9 +16,7 @@ class ReactChatAgent(ReactMessagesAgent):
         super().__init__(system_prompt, newMemory, tools)
 
     @override
-    def invoke(self, user=None) -> None:
-        if user is None:
-            user = {"configurable": {"thread_id": str(uuid4())}}
+    def _invoke(self, text: str, user: RunnableConfig | dict[str, Any]) -> None:
         asyncio.run(self._run_chat(user))
 
     async def _run_chat(self, user) -> None:

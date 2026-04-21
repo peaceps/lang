@@ -15,8 +15,8 @@ def main() -> None:
     # function_calling_run()
     # agent_run()
     # mail_run()
-    react_run()
-    # essay_run()
+    # react_run()
+    essay_run()
 
 if __name__ == "__main__":
     main()

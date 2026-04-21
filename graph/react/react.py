@@ -73,10 +73,11 @@ def run() -> None:
     user1 = {"configurable": {"thread_id": "123"}}
     user2 = {"configurable": {"thread_id": "321"}}
     user3 = {"configurable": {"thread_id": "111"}}
-    # react_agent = ReactSimpleAgent(dog_system_prompt, known_actions)
-    # sync_agent = ReactSyncAgent(searcher_system_prompt, False)
-    chat_agent = ReactChatAgent(searcher_system_prompt, False)
-    # sync_agent.invoke_sync("巴黎今天的天气怎样？", user1)
-    # sync_agent.invoke_steps("柏林呢？", user1)
-    # sync_agent.invoke_sync("杭州呢？", user1)
-    chat_agent.invoke(user1)
+    # simple_agent = ReactSimpleAgent(dog_system_prompt, known_actions)
+    sync_agent = ReactSyncAgent(searcher_system_prompt, False)
+    # sync_agent.invoke("巴黎今天的天气怎样？", user1)
+    sync_agent.invoke("柏林呢？", user1, True)
+    # sync_agent.invoke("杭州呢？", user1)
+    # sync_agent.invoke("气候怎样？", user1, True)
+    # chat_agent = ReactChatAgent(searcher_system_prompt, False)
+    # chat_agent.invoke(user1)
