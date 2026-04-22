@@ -33,6 +33,9 @@ class GraphAgent(ABC):
         checkpointer = AsyncSqliteSaver(conn)
         self.graph = self._create_graph(checkpointer)
 
+    async def _close_graph(self):
+        await self.graph.checkpointer.conn.close()
+
     def _ensure_checkpoint_parent(self) -> None:
         self._checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -45,7 +48,12 @@ class GraphAgent(ABC):
             pass
 
     def display_graph(self):
-        display(self._create_graph())
+        asyncio.run(self._display_graph_async())
+
+    async def _display_graph_async(self):
+        await self._init_graph()
+        display(self.graph)
+        await self._close_graph()
 
     @abstractmethod
     def _create_graph(self, checkpointer=None):
@@ -70,7 +78,7 @@ class GraphAgent(ABC):
         await self._init_graph()
         for p in parts:
             await self._run_by_stream(p, user)
-        await self.graph.checkpointer.conn.close()
+        await self._close_graph()
 
     async def _run_by_stream(
         self, p: dict[str, Any] | None, user: RunnableConfig | dict[str, Any]
