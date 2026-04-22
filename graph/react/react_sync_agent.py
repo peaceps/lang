@@ -2,6 +2,7 @@ import sqlite3
 from typing import Any, override
 from langchain_core.runnables import RunnableConfig
 
+from graph.graph_ui import display
 from langgraph.checkpoint.sqlite import SqliteSaver
 from graph.react.react_messages_agent import ReactMessagesAgent, MessagesAgentState
 from tools.tools import extract_content
@@ -18,6 +19,12 @@ class ReactSyncAgent(ReactMessagesAgent):
         super().__init__(system_prompt, newMemory, tools)
 
     @override
+    def display_graph(self):
+        self._init_graph()
+        display(self.graph)
+        self._close_graph()
+
+    @override
     def _init_graph(self, interrupt_before: list[str] = None):
         self._ensure_checkpoint_parent()
         conn = sqlite3.connect(
@@ -26,6 +33,10 @@ class ReactSyncAgent(ReactMessagesAgent):
         )
         checkpointer = SqliteSaver(conn)
         self.graph = self._create_graph(checkpointer, interrupt_before)
+
+    @override
+    def _close_graph(self):
+        self.graph.checkpointer.conn.close()
 
     @override
     def _invoke(self, text: str, user: RunnableConfig | dict[str, Any], steps=False) -> None:
@@ -38,7 +49,7 @@ class ReactSyncAgent(ReactMessagesAgent):
         self._init_graph(interrupt_before)
         for p in self._format_input(text):
             getattr(self, action)(p, user)
-        self.graph.checkpointer.conn.close()
+        self._close_graph()
 
     def _run_by_sync(self, p: MessagesAgentState|None, user) -> None:
         res = self.graph.invoke(p, user)
