@@ -1,19 +1,22 @@
 import { ChatOpenAI } from '@langchain/openai';
-import { llmGateway, } from './llmgw_config.json';
+import { llmGateway } from './llmgw-config.json';
 
 const gw = {
     embeddingModel: llmGateway.embeddingModel ?? 'text-embedding-3-small',
     model: llmGateway.llmgwModel ?? 'GPT5',
     baseURL: llmGateway.llmgwApiBase.replace(/\/+$/, ''),
     apiKey: llmGateway.llmgwApiKey,
-    headers: {'api-key': llmGateway.llmgwApiKey, 'workspacename': llmGateway.llmgwWorkspace},
-    timeout: llmGateway.timeout ?? 300,
+    headers: {
+        'api-key': llmGateway.llmgwApiKey,
+        'workspacename': ('llmgwWorkspace' in llmGateway) ? llmGateway.llmgwWorkspace as string : ''
+    },
+    timeoutMs: (llmGateway.timeout ?? 300) * 1000, // JSON: seconds → client: ms
     temperature: llmGateway.temperature ?? 0.1,
     maxTokens: llmGateway.maxTokens ?? 8000,
     tavilyApiKey: llmGateway.tavilyApiKey
 }
 
-export function getChatOpenAI(tools?: any[]) {
+export function getChatOpenAI(tools: any[] = []) {
     const model = new ChatOpenAI({
         model: gw.model,
         apiKey: gw.apiKey,
@@ -23,10 +26,7 @@ export function getChatOpenAI(tools?: any[]) {
         },
         temperature: gw.temperature,
         maxTokens: gw.maxTokens,
-        timeout: gw.timeout,
-    });
-    if (tools && tools.length > 0) {
-        model.bindTools(tools);
-    }
+        timeout: gw.timeoutMs,
+    }).bindTools(tools, {tool_choice: 'required'});
     return model;
 }
