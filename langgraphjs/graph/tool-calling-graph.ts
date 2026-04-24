@@ -11,14 +11,17 @@ import { Runnable } from "@langchain/core/runnables";
 import { SystemMessage, ToolMessage, AIMessage, HumanMessage } from "@langchain/core/messages";
 
 import { getChatOpenAI } from "../llm/init-llmgw";
-import { tavilyTool, localShellTool } from "./tools";
+import { toolList } from "./tools";
 import { readUserInput } from "./user-input";
 
+const platform = process.platform.toLowerCase().includes("win") ? "windows" : "linux";
+
 const DEFALT_SYSTEM_PROMPT = `
-你是一个智能的研究助手。使用tavily搜索引擎来查找信息。\
+你是一个${platform}平台的智能的研究和管理助手。
+多使用提供的工具来执行操作，比如使用tavily搜索引擎来查找内容，或者使用本地shell来执行命令以获取本地电脑的信息。\
 你可以进行多次调用（可以同时进行，也可以按顺序进行）。\
-尽可能都用tavily进行搜索以获得准确的结果。\
-如果在提出后续问题之前需要先查找一些信息，你也可以这样做！
+尽可能多使用工具以获得准确的结果。\
+如果在提出后续问题之前需要先查找一些信息，务必继续使用工具！
 
 重要：对**同一个用户问题**，在已经收到至少一条工具返回的观测结果后，你必须用**一条最终回复**直接回答用户，\
 整合工具结果即可。
@@ -29,7 +32,7 @@ const ToolCallingState = new StateSchema({
 });
 
 export class ToolCallingGraph {
-    private tools = [localShellTool, tavilyTool];
+    private tools = toolList;
     private toolsMap = new Map<string, any>(this.tools.map(tool => [tool.name, tool]));
     private model: Runnable;
     private graph;

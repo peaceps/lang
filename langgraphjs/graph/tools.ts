@@ -1,4 +1,3 @@
-import { tools } from "@langchain/openai";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { exec } from "child_process";
 import { promisify } from "util";
@@ -13,7 +12,7 @@ const execAsync = promisify(exec);
  * sends `role: "tool"` in a form incompatible with DashScope compatible-mode (expects
  * user|assistant|system|function for that route). A normal `function` tool uses Chat Completions.
  */
-export const localShellTool = new DynamicStructuredTool({
+const localShellTool = new DynamicStructuredTool({
   name: "local_shell",
   description:
     "Run a single shell command on the local machine and return combined stdout and stderr.",
@@ -42,10 +41,10 @@ export const localShellTool = new DynamicStructuredTool({
   },
 });
 
-export const webSearchTool = tools.webSearch();
-
-export const tavilyTool = new TavilySearch({
+const tavilyTool = new TavilySearch({
     // searchDepth: "advanced",
     // includeAnswer: true,
     maxResults: 3,
 });
+
+export const toolList = [localShellTool, tavilyTool];
