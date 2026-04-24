@@ -1,5 +1,4 @@
 import {
-    CompiledStateGraph,
     END,
     ExtractStateType,
     ExtractUpdateType,
@@ -7,24 +6,19 @@ import {
     StateGraph,
     StateSchema,
     MessagesValue,
-    GraphNode,
-    Annotation,
-    ConditionalEdgeRouter
 } from "@langchain/langgraph";
 
-import { localShell } from "./tools/local-shell-tool";
-import { getChatOpenAI } from "./core/init-llmgw";
-import { tool } from "@langchain/core/tools";
 import { Runnable } from "@langchain/core/runnables";
 import { SystemMessage, ToolMessage, AIMessage, HumanMessage } from "@langchain/core/messages";
-
+import { getChatOpenAI } from "./core/init-llmgw";
+import { tavilyTool, localShellTool } from "./tools/tools";
 
 const MyState = new StateSchema({
     messages: MessagesValue
-  });
+});
 
 export class MyGraph {
-    private tools = [localShell];
+    private tools = [localShellTool, tavilyTool];
     private toolsMap = new Map<string, any>(this.tools.map(tool => [tool.name, tool]));
     private model: Runnable;
     private graph;
@@ -73,17 +67,18 @@ export class MyGraph {
         return END;
     };
 
+    async invoke_sync(input: string): Promise<any> {
+        const result = await this.graph.invoke(this.formatInput(input) as ExtractStateType<typeof MyState> ?? undefined);
+        console.log(result.messages.at(-1)?.content);
+    }
+
     async invoke(input: string): Promise<any> {
         const result = this.graph.streamEvents(this.formatInput(input) as ExtractStateType<typeof MyState>, {version: "v2", streamMode: ["updates"]});
         for await (const event of result) {
             if (event.event === "on_chat_model_stream") {
                 const content = event.data.chunk.content;
-                if (content?.length > 0) {
-                    content.forEach((chunk: any) => {
-                        if (chunk.text && chunk.text.trim().length > 0) {
-                            process.stdout.write(chunk.text.trim());
-                        }
-                    });
+                if (content?.trim().length > 0) {
+                    process.stdout.write(content.trim());
                 }
             }
         }

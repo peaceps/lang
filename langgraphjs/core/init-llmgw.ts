@@ -16,10 +16,15 @@ const gw = {
     tavilyApiKey: llmGateway.tavilyApiKey
 }
 
+process.env.TAVILY_API_KEY = gw.tavilyApiKey;
+
 export function getChatOpenAI(tools: any[] = []) {
     const model = new ChatOpenAI({
         model: gw.model,
         apiKey: gw.apiKey,
+        // OpenAI "built-in" tools (e.g. tools.localShell) force the Responses API; non-OpenAI
+        // gateways (e.g. DashScope) often break on that path. Keep Completions for compat-mode.
+        useResponsesApi: false,
         configuration: {
             baseURL: gw.baseURL.replace(/\/+$/, ''),
             defaultHeaders: gw.headers,
@@ -27,6 +32,6 @@ export function getChatOpenAI(tools: any[] = []) {
         temperature: gw.temperature,
         maxTokens: gw.maxTokens,
         timeout: gw.timeoutMs,
-    }).bindTools(tools, {tool_choice: 'required'});
+    }).bindTools(tools, {tool_choice: 'auto'});
     return model;
 }
