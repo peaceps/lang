@@ -19,7 +19,7 @@ const gw = {
 process.env.TAVILY_API_KEY = gw.tavilyApiKey;
 
 export function getChatOpenAI(tools: any[] = []) {
-    const model = new ChatOpenAI({
+    return new ChatOpenAI({
         model: gw.model,
         apiKey: gw.apiKey,
         // OpenAI "built-in" tools (e.g. tools.localShell) force the Responses API; non-OpenAI
@@ -33,5 +33,4 @@ export function getChatOpenAI(tools: any[] = []) {
         maxTokens: gw.maxTokens,
         timeout: gw.timeoutMs,
     }).bindTools(tools, {tool_choice: 'auto'});
-    return model;
 }

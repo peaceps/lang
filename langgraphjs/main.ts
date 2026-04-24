@@ -1,14 +1,4 @@
-import { MyGraph } from './graph';
+import { ToolCallingGraph } from "./graph/tool-calling-graph";
 
-const system = `
-你是一个智能的研究助手。使用tavily搜索引擎来查找信息。\
-你可以进行多次调用（可以同时进行，也可以按顺序进行）。\
-尽可能都用tavily进行搜索以获得准确的结果。\
-如果在提出后续问题之前需要先查找一些信息，你也可以这样做！
-
-重要：对**同一个用户问题**，在已经收到至少一条工具返回的观测结果后，你必须用**一条最终回复**直接回答用户，\
-整合工具结果即可。
-`;
-
-const graph = new MyGraph(system);
-await graph.invoke("2026年世界杯的举办国家有哪些，分别是在什么时候独立的。");
+const graph = new ToolCallingGraph();
+await graph.invoke_chat();
