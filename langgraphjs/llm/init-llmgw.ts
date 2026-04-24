@@ -1,22 +1,25 @@
+import path from 'path';
+import dotenv from 'dotenv';
+
 import { ChatOpenAI } from '@langchain/openai';
-import { llmGateway } from './llmgw-config.json';
+
+
+dotenv.config({ path: path.join(process.cwd(), '.env') });
 
 const gw = {
-    embeddingModel: llmGateway.embeddingModel ?? 'text-embedding-3-small',
-    model: llmGateway.llmgwModel ?? 'GPT5',
-    baseURL: llmGateway.llmgwApiBase.replace(/\/+$/, ''),
-    apiKey: llmGateway.llmgwApiKey,
+    embeddingModel: process.env.EMBENDING_MODEL_ID,
+    model: process.env.MODEL_ID || 'GPT5',
+    baseURL: process.env.OPENAI_BASE_URL || '',
+    apiKey: process.env.OPENAI_API_KEY || '',
     headers: {
-        'api-key': llmGateway.llmgwApiKey,
-        'workspacename': ('llmgwWorkspace' in llmGateway) ? llmGateway.llmgwWorkspace as string : ''
+        'api-key': process.env.OPENAI_API_KEY || '',
+        'workspacename': process.env.WORKSPACE_NAME || '',
     },
-    timeoutMs: (llmGateway.timeout ?? 300) * 1000, // JSON: seconds → client: ms
-    temperature: llmGateway.temperature ?? 0.1,
-    maxTokens: llmGateway.maxTokens ?? 8000,
-    tavilyApiKey: llmGateway.tavilyApiKey
+    timeoutMs: 300 * 1000, // JSON: seconds → client: ms
+    temperature: 0.1,
+    maxTokens: 8000,
+    tavilyApiKey: process.env.TAVILY_API_KEY || '',
 }
-
-process.env.TAVILY_API_KEY = gw.tavilyApiKey;
 
 export function getChatOpenAI(tools: any[] = []) {
     return new ChatOpenAI({

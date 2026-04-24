@@ -6,9 +6,13 @@ import {
     StateGraph,
     StateSchema,
     MessagesValue,
+    MemorySaver,
+    LangGraphRunnableConfig
 } from "@langchain/langgraph";
 import { Runnable } from "@langchain/core/runnables";
 import { SystemMessage, ToolMessage, AIMessage, HumanMessage } from "@langchain/core/messages";
+
+import { randomUUID } from "node:crypto";
 
 import { getChatOpenAI } from "../llm/init-llmgw";
 import { toolList } from "./tools";
@@ -35,6 +39,7 @@ export class ToolCallingGraph {
     private tools = toolList;
     private toolsMap = new Map<string, any>(this.tools.map(tool => [tool.name, tool]));
     private model: Runnable;
+    private saver = new MemorySaver();
     private graph;
 
     constructor(private systemPrompt: string = DEFALT_SYSTEM_PROMPT) {
@@ -45,7 +50,7 @@ export class ToolCallingGraph {
             .addConditionalEdges("llm", this.shouldContinue.bind(this), ["tools", END])
             .addEdge(START, "llm")
             .addEdge("tools", "llm")
-            .compile();
+            .compile({checkpointer: this.saver});
     }
 
     private async llmNode(state: ExtractStateType<typeof ToolCallingState>): Promise<ExtractUpdateType<typeof ToolCallingState>> {
@@ -81,13 +86,21 @@ export class ToolCallingGraph {
         return END;
     };
 
-    async invoke_sync(input: string): Promise<any> {
-        const result = await this.graph.invoke(this.formatInput(input));
+    async invoke_sync(input: string, user?: LangGraphRunnableConfig): Promise<any> {
+        if (!user) {
+            user = { configurable: { thread_id: randomUUID() } };
+        }
+        const result = await this.graph.invoke(this.formatInput(input), user );
         console.log(result.messages.at(-1)?.content);
     }
 
-    async invoke(input: string): Promise<any> {
-        const result = this.graph.streamEvents(this.formatInput(input), {version: "v2", streamMode: ["updates"]});
+    async invoke(input: string, user?: LangGraphRunnableConfig): Promise<any> {
+        if (!user) {
+            user = { configurable: { thread_id: randomUUID() } };
+        }
+        const result = this.graph.streamEvents(this.formatInput(input), {
+            version: "v2", streamMode: ["updates"], configurable: user?.configurable
+        });
         for await (const event of result) {
             if (event.event === "on_chat_model_stream") {
                 const content = event.data.chunk.content;
@@ -96,17 +109,18 @@ export class ToolCallingGraph {
                 }
             }
         }
+        console.log(); // 换行
     }
 
-    async invoke_chat(): Promise<void> {
+    async invoke_chat(user?: LangGraphRunnableConfig): Promise<void> {
         console.log("输入你想问的内容，或者输入'exit'退出");
         const {read, close} = readUserInput();
         while (true) {
-            const input = await read(">>> ");
-            if (input === "exit") {
+            const input = (await read(">>> ")).trim().toLowerCase();
+            if (input === "exit" || input === "q") {
                 break;
             }
-            await this.invoke(input);
+            await this.invoke(input, user);
         }
         await close();
         console.log("再见！");
